@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from youtube_transcript_api import YouTubeTranscriptApi
+from langchain_community.document_loaders import YoutubeLoader
 from groq import Groq
 import streamlit as st
 
@@ -11,16 +11,13 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 
 def extract_transcript(url):
-    if "v=" in url:
-        video_id = url.split("v=")[1].split("&")[0]
-    else:
-        video_id = url.split("/")[-1]
+    loader = YoutubeLoader.from_youtube_url(url)
+    docs = loader.load()
 
-    transcript = YouTubeTranscriptApi().fetch(video_id)
+    if not docs:
+        raise ValueError("No transcript available")
 
-    text = " ".join([t.text for t in transcript])
-
-    return text
+    return docs[0].page_content
 
 def generate_article(text):
     prompt = f"""
